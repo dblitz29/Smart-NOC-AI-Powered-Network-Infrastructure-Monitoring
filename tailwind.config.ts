@@ -1,75 +1,31 @@
 import type { Config } from "tailwindcss";
 
+const c = (name: string) => `hsl(var(--${name}))`;
+
 const config: Config = {
-  darkMode: ["class"],
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        success: {
-          DEFAULT: "hsl(var(--success))",
-          foreground: "hsl(var(--success-foreground))",
-        },
-        warning: {
-          DEFAULT: "hsl(var(--warning))",
-          foreground: "hsl(var(--warning-foreground))",
-        },
-        critical: {
-          DEFAULT: "hsl(var(--critical))",
-          foreground: "hsl(var(--critical-foreground))",
-        },
+        border: c("border"),
+        input: c("input"),
+        ring: c("ring"),
+        background: c("background"),
+        foreground: c("foreground"),
+        primary: { DEFAULT: c("primary"), foreground: c("primary-foreground") },
+        secondary: { DEFAULT: c("secondary"), foreground: c("secondary-foreground") },
+        muted: { DEFAULT: c("muted"), foreground: c("muted-foreground") },
+        accent: { DEFAULT: c("accent"), foreground: c("accent-foreground") },
+        card: { DEFAULT: c("card"), foreground: c("card-foreground") },
+        popover: { DEFAULT: c("popover"), foreground: c("popover-foreground") },
+        success: c("success"),
+        warning: c("warning"),
+        critical: c("critical"),
       },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
-      keyframes: {
-        "pulse-dot": {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.3" },
-        },
-        scan: {
-          "0%": { transform: "translateY(-100%)" },
-          "100%": { transform: "translateY(100%)" },
-        },
-      },
-      animation: {
-        "pulse-dot": "pulse-dot 1.4s ease-in-out infinite",
-        scan: "scan 4s linear infinite",
+      borderRadius: { lg: "6px", md: "4px", sm: "2px" },
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
     },
   },

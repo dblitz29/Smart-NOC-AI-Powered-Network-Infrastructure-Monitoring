@@ -51,6 +51,10 @@ npm run dev
 
 Then open http://localhost:3000.
 
+On Windows PowerShell, if `npm` is blocked by the script execution policy, use `npm.cmd install` and `npm.cmd run dev`.
+
+Design direction, dials and the reason behind each choice are in [DESIGN.md](DESIGN.md).
+
 ## Notes / Scope
 
 - This is a visual/UX prototype only: there is no backend, no real video feed, and no persistence — refreshing the page resets simulated alerts to the seed data.

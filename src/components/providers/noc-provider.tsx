@@ -1,88 +1,81 @@
 "use client";
 
-import * as React from "react";
-import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
-import { ALERTS, CAMERAS, randomDetection, severityForDetection } from "@/lib/mock-data";
-import type { AlertItem, AlertStatus, Camera } from "@/lib/types";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ALERT_SEEDS, CAMERAS, DETECTION_TYPES, SITE_SEEDS, severityFor } from "@/lib/mock-data";
+import type { AlertItem, AlertStatus, Camera, Seed, Site } from "@/lib/types";
 
-interface NocContextValue {
+interface Noc {
   alerts: AlertItem[];
+  sites: Site[];
   cameras: Camera[];
+  /** Ticks every 20 s so relative times stay honest. */
+  now: number;
+  /** Shared by the header search and the list pages. */
+  query: string;
+  setQuery: (q: string) => void;
   liveSimulation: boolean;
   setLiveSimulation: (v: boolean) => void;
-  acknowledgeAlert: (id: string) => void;
-  resolveAlert: (id: string) => void;
   setAlertStatus: (id: string, status: AlertStatus) => void;
 }
 
-const NocContext = createContext<NocContextValue | null>(null);
+const Ctx = createContext<Noc | null>(null);
+const seed = <T,>(seeds: Seed<T>[], base: number): T[] =>
+  seeds.map(({ ageMin, ...rest }) => ({ ...rest, at: base - ageMin * 60000 }) as unknown as T);
 
 let seq = 2000;
+const pick = <T,>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
 
 export function NocProvider({ children }: { children: React.ReactNode }) {
-  const [alerts, setAlerts] = useState<AlertItem[]>(ALERTS);
-  const [cameras] = useState<Camera[]>(CAMERAS);
+  // Same base on first render means server and client print identical relative times.
+  const [base] = useState(() => Date.now());
+  const [now, setNow] = useState(base);
+  const [alerts, setAlerts] = useState<AlertItem[]>(() => seed<AlertItem>(ALERT_SEEDS, base));
+  const [sites] = useState<Site[]>(() => seed<Site>(SITE_SEEDS, base));
+  const [query, setQuery] = useState("");
   const [liveSimulation, setLiveSimulation] = useState(true);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const setAlertStatus = useCallback((id: string, status: AlertStatus) => {
-    setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
-  }, []);
-
-  const acknowledgeAlert = useCallback(
-    (id: string) => setAlertStatus(id, "acknowledged"),
-    [setAlertStatus]
-  );
-  const resolveAlert = useCallback((id: string) => setAlertStatus(id, "resolved"), [setAlertStatus]);
 
   useEffect(() => {
-    if (!liveSimulation) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
-    }
-    intervalRef.current = setInterval(() => {
-      const detection = randomDetection();
-      const severity = severityForDetection(detection);
-      const camera = cameras[Math.floor(Math.random() * cameras.length)];
+    const t = setInterval(() => setNow(Date.now()), 20000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    if (!liveSimulation) return;
+    const t = setInterval(() => {
+      const cam = pick(CAMERAS.filter((c) => c.online));
+      const detection = pick(DETECTION_TYPES);
       seq += 1;
-      const newAlert: AlertItem = {
+      const item: AlertItem = {
         id: `ALT-${seq}`,
-        severity,
-        title: `${detection} Detected`,
+        severity: severityFor(detection),
+        title: `${detection} (${cam.view})`,
         detection,
-        siteId: camera.siteId,
-        siteName: camera.siteName,
-        cameraId: camera.id,
         confidence: Math.round((85 + Math.random() * 14) * 10) / 10,
-        timestamp: "Just now",
+        siteId: cam.siteId,
+        siteName: cam.siteName,
+        cameraId: cam.id,
+        at: Date.now(),
         status: "new",
       };
-      setAlerts((prev) => [newAlert, ...prev].slice(0, 40));
-    }, 14000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [liveSimulation, cameras]);
+      setAlerts((prev) => [item, ...prev].slice(0, 40));
+    }, 20000);
+    return () => clearInterval(t);
+  }, [liveSimulation]);
 
-  return (
-    <NocContext.Provider
-      value={{
-        alerts,
-        cameras,
-        liveSimulation,
-        setLiveSimulation,
-        acknowledgeAlert,
-        resolveAlert,
-        setAlertStatus,
-      }}
-    >
-      {children}
-    </NocContext.Provider>
+  const setAlertStatus = useCallback(
+    (id: string, status: AlertStatus) => setAlerts((p) => p.map((a) => (a.id === id ? { ...a, status } : a))),
+    []
   );
+
+  const value = useMemo<Noc>(
+    () => ({ alerts, sites, cameras: CAMERAS, now, query, setQuery, liveSimulation, setLiveSimulation, setAlertStatus }),
+    [alerts, sites, now, query, liveSimulation, setAlertStatus]
+  );
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
 export function useNoc() {
-  const ctx = useContext(NocContext);
-  if (!ctx) throw new Error("useNoc must be used within NocProvider");
-  return ctx;
+  const v = useContext(Ctx);
+  if (!v) throw new Error("useNoc must be used inside NocProvider");
+  return v;
 }

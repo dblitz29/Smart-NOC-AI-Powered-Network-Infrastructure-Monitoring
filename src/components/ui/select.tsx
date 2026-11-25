@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 
 const Select = SelectPrimitive.Root;
 const SelectValue = SelectPrimitive.Value;
-const SelectGroup = SelectPrimitive.Group;
 
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
@@ -16,14 +15,14 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-8 items-center justify-between gap-2 rounded-md border border-border bg-secondary/40 px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring",
+      "flex h-10 w-full items-center justify-between gap-2 rounded-md border border-border bg-card px-3 text-sm hover:bg-secondary",
       className
     )}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+      <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -37,8 +36,9 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       position={position}
+      sideOffset={4}
       className={cn(
-        "z-50 min-w-[8rem] overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-lg",
+        "z-[60] max-h-72 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-md border border-border bg-popover shadow-2xl",
         className
       )}
       {...props}
@@ -56,14 +56,14 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pl-7 pr-2 text-xs outline-none focus:bg-secondary data-[state=checked]:text-primary",
+      "relative flex min-h-9 cursor-pointer select-none items-center rounded-sm py-1.5 pl-7 pr-2 text-sm outline-none data-[highlighted]:bg-secondary",
       className
     )}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+    <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-3.5 w-3.5" />
+        <Check className="h-3.5 w-3.5" aria-hidden="true" />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -71,4 +71,4 @@ const SelectItem = React.forwardRef<
 ));
 SelectItem.displayName = "SelectItem";
 
-export { Select, SelectValue, SelectGroup, SelectTrigger, SelectContent, SelectItem };
+export { Select, SelectValue, SelectTrigger, SelectContent, SelectItem };

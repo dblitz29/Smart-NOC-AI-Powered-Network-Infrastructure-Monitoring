@@ -4,67 +4,66 @@
 
 @layer base {
   :root {
-    --background: 222 32% 6%;
-    --foreground: 210 20% 92%;
-
-    --card: 222 28% 9%;
-    --card-foreground: 210 20% 92%;
-
-    --popover: 222 28% 9%;
-    --popover-foreground: 210 20% 92%;
-
-    --primary: 192 85% 50%;
-    --primary-foreground: 222 32% 6%;
-
-    --secondary: 222 20% 16%;
-    --secondary-foreground: 210 20% 92%;
-
-    --muted: 222 20% 14%;
-    --muted-foreground: 215 15% 62%;
-
-    --accent: 258 60% 62%;
-    --accent-foreground: 210 20% 96%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 20% 96%;
-
-    --success: 142 60% 45%;
-    --success-foreground: 210 20% 96%;
-
-    --warning: 38 92% 50%;
-    --warning-foreground: 222 32% 6%;
-
-    --critical: 0 84% 60%;
-    --critical-foreground: 210 20% 96%;
-
-    --border: 222 20% 17%;
-    --input: 222 20% 17%;
-    --ring: 192 85% 50%;
-
-    --radius: 0.625rem;
+    --background: 214 24% 8%;
+    --foreground: 210 20% 93%;
+    --card: 214 20% 11%;
+    --card-foreground: 210 20% 93%;
+    --popover: 214 20% 13%;
+    --popover-foreground: 210 20% 93%;
+    --primary: 190 75% 52%;
+    --primary-foreground: 214 24% 8%;
+    --secondary: 214 16% 17%;
+    --secondary-foreground: 210 20% 93%;
+    --muted: 214 16% 14%;
+    --muted-foreground: 214 12% 67%;
+    --accent: 214 16% 17%;
+    --accent-foreground: 210 20% 93%;
+    --success: 142 55% 50%;
+    --warning: 38 92% 55%;
+    --critical: 0 78% 62%;
+    --border: 214 14% 21%;
+    --input: 214 14% 21%;
+    --ring: 190 75% 52%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
-}
 
-@layer utilities {
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    font-variant-numeric: tabular-nums;
   }
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 4px;
+
+  /* Every enabled control signals it is clickable (R-39). */
+  button,
+  [role="button"],
+  [role="switch"],
+  [role="combobox"],
+  a[href],
+  summary,
+  select,
+  label[for] {
+    cursor: pointer;
   }
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
+  :disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Browser fullscreen on a camera feed: keep 16:9 so overlays stay aligned. */
+  .feed-fs:fullscreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+  }
+  .feed-fs:fullscreen > .feed-frame {
+    width: min(100vw, 177.78vh);
   }
 }

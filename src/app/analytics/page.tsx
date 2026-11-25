@@ -1,139 +1,109 @@
 "use client";
 
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AppShell } from "@/components/layout/app-shell";
 import { ChartCard } from "@/components/dashboard/chart-card";
-import {
-  INCIDENTS_OVER_TIME,
-  INCIDENT_CATEGORIES,
-  SEVERITY_DISTRIBUTION,
-  SITE_HEALTH_DISTRIBUTION,
-  DETECTION_TRENDS,
-} from "@/lib/mock-data";
+import { useNoc } from "@/components/providers/noc-provider";
+import { DETECTION_TRENDS, INCIDENTS_PER_DAY, INCIDENT_CATEGORIES, SEVERITY_COUNTS } from "@/lib/mock-data";
 
-const tooltipStyle = {
-  backgroundColor: "hsl(222 28% 9%)",
-  border: "1px solid hsl(222 20% 17%)",
-  borderRadius: 8,
-  fontSize: 12,
-  color: "hsl(210 20% 92%)",
+// Recharts needs literal colors. They mirror the CSS variables in globals.css.
+const C = { axis: "#9aa6ad", grid: "#242d33", accent: "#35c7e0", critical: "#ee6666", warning: "#f5b53d", success: "#4cc47a", neutral: "#7f95a2", text: "#e8edf1" };
+const tick = { fill: C.axis, fontSize: 12 };
+const tip = {
+  contentStyle: { background: "#1b242a", border: "1px solid #2e3a42", borderRadius: 6, fontSize: 12 },
+  labelStyle: { color: C.text },
+  itemStyle: { color: C.text },
+  cursor: { fill: "#ffffff10" },
 };
-
-const axisStyle = { fontSize: 11, fill: "hsl(215 15% 62%)" };
+const SEV_COLOR: Record<string, string> = { Critical: C.critical, Warning: C.warning, Info: C.neutral };
 
 export default function AnalyticsPage() {
+  const { sites } = useNoc();
+  const health = (["healthy", "warning", "critical"] as const).map((s) => ({
+    name: s[0].toUpperCase() + s.slice(1),
+    value: sites.filter((x) => x.status === s).length,
+  }));
+  const HEALTH_COLOR: Record<string, string> = { Healthy: C.success, Warning: C.warning, Critical: C.critical };
+
   return (
     <AppShell title="Analytics">
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <ChartCard title="AI Incidents Over Time" description="Last 7 days">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={INCIDENTS_OVER_TIME}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 20% 17%)" />
-              <XAxis dataKey="day" tick={axisStyle} />
-              <YAxis tick={axisStyle} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Area
-                type="monotone"
-                dataKey="incidents"
-                stroke="#22d3ee"
-                fill="#22d3ee"
-                fillOpacity={0.15}
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </ChartCard>
+      <div className="space-y-5">
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Sample series. The site health chart reads the live site list; the others are fixed mock data.
+        </p>
+        <div className="grid gap-5 xl:grid-cols-3">
+          <ChartCard className="xl:col-span-2" height="h-72" title="How many AI incidents did we get each day this week?" note="Incidents per day, Monday to Sunday. Friday was the peak at 31.">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={INCIDENTS_PER_DAY}>
+                <CartesianGrid stroke={C.grid} vertical={false} />
+                <XAxis dataKey="day" tick={tick} tickLine={false} axisLine={{ stroke: C.grid }} />
+                <YAxis tick={tick} tickLine={false} axisLine={false} width={32} />
+                <Tooltip {...tip} />
+                <Bar dataKey="incidents" name="Incidents" fill={C.accent} radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-        <ChartCard title="Incident Categories" description="Distribution by detection type">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={INCIDENT_CATEGORIES}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={55}
-                outerRadius={85}
-                paddingAngle={2}
-              >
-                {INCIDENT_CATEGORIES.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: 11, color: "hsl(215 15% 62%)" }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartCard>
+          <ChartCard height="h-72" title="How severe are the incidents?" note="Count by severity. Warning and info make up most of the load.">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={SEVERITY_COUNTS} layout="vertical" margin={{ left: 8 }}>
+                <CartesianGrid stroke={C.grid} horizontal={false} />
+                <XAxis type="number" tick={tick} tickLine={false} axisLine={false} />
+                <YAxis type="category" dataKey="name" tick={tick} tickLine={false} axisLine={false} width={64} />
+                <Tooltip {...tip} />
+                <Bar dataKey="value" name="Incidents" radius={[0, 2, 2, 0]}>
+                  {SEVERITY_COUNTS.map((d) => (
+                    <Cell key={d.name} fill={SEV_COLOR[d.name]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-        <ChartCard title="Severity Distribution" description="Across all active & resolved alerts">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={SEVERITY_DISTRIBUTION}
-                dataKey="value"
-                nameKey="name"
-                outerRadius={85}
-              >
-                {SEVERITY_DISTRIBUTION.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: 11, color: "hsl(215 15% 62%)" }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartCard>
+          <ChartCard className="xl:col-span-2" height="h-72" title="Which detections are growing over six months?" note="Monthly detections by type, June to November. Person detection leads and keeps rising.">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={DETECTION_TRENDS}>
+                <CartesianGrid stroke={C.grid} vertical={false} />
+                <XAxis dataKey="month" tick={tick} tickLine={false} axisLine={{ stroke: C.grid }} />
+                <YAxis tick={tick} tickLine={false} axisLine={false} width={36} />
+                <Tooltip {...tip} cursor={{ stroke: C.grid }} />
+                <Legend wrapperStyle={{ fontSize: 12, color: C.axis }} />
+                <Line type="monotone" dataKey="person" name="Person" stroke={C.accent} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="ppe" name="PPE violation" stroke={C.warning} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="unauthorized" name="Unauthorized access" stroke={C.critical} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="smoke" name="Smoke and fire" stroke={C.text} strokeWidth={2} strokeDasharray="4 3" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-        <ChartCard title="Site Health Distribution" description="Current status across all sites">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={SITE_HEALTH_DISTRIBUTION} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 20% 17%)" />
-              <XAxis type="number" tick={axisStyle} />
-              <YAxis type="category" dataKey="name" tick={axisStyle} width={70} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {SITE_HEALTH_DISTRIBUTION.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
+          <ChartCard height="h-72" title="What are the incidents about?" note="Count by category, largest first.">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={INCIDENT_CATEGORIES} layout="vertical" margin={{ left: 8 }}>
+                <CartesianGrid stroke={C.grid} horizontal={false} />
+                <XAxis type="number" tick={tick} tickLine={false} axisLine={false} />
+                <YAxis type="category" dataKey="name" tick={tick} tickLine={false} axisLine={false} width={120} />
+                <Tooltip {...tip} />
+                <Bar dataKey="value" name="Incidents" fill={C.neutral} radius={[0, 2, 2, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-        <ChartCard
-          title="Detection Trends"
-          description="Monthly detections by type (last 6 months)"
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={DETECTION_TRENDS}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 20% 17%)" />
-              <XAxis dataKey="month" tick={axisStyle} />
-              <YAxis tick={axisStyle} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: 11, color: "hsl(215 15% 62%)" }} />
-              <Line type="monotone" dataKey="person" stroke="#22d3ee" strokeWidth={2} name="Person" />
-              <Line type="monotone" dataKey="ppe" stroke="#fbbf24" strokeWidth={2} name="PPE Violation" />
-              <Line type="monotone" dataKey="unauthorized" stroke="#a78bfa" strokeWidth={2} name="Unauthorized" />
-              <Line type="monotone" dataKey="smoke" stroke="#ef4444" strokeWidth={2} name="Smoke/Fire" />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartCard>
+          <ChartCard className="xl:col-span-3" height="h-44" title="How many listed sites are healthy right now?" note={`Sites by status, from the ${sites.length} sites on the Site Health page.`}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={health} layout="vertical" margin={{ left: 8 }}>
+                <CartesianGrid stroke={C.grid} horizontal={false} />
+                <XAxis type="number" allowDecimals={false} tick={tick} tickLine={false} axisLine={false} />
+                <YAxis type="category" dataKey="name" tick={tick} tickLine={false} axisLine={false} width={64} />
+                <Tooltip {...tip} />
+                <Bar dataKey="value" name="Sites" radius={[0, 2, 2, 0]}>
+                  {health.map((d) => (
+                    <Cell key={d.name} fill={HEALTH_COLOR[d.name]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
       </div>
     </AppShell>
   );

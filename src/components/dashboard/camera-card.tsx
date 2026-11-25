@@ -1,145 +1,156 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
-import { Maximize2, WifiOff, ScanEye } from "lucide-react";
-import type { Camera } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { severityBadgeVariant } from "@/lib/status";
+import { useRef, useState } from "react";
+import Link from "next/link";
+import { Maximize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { LiveClock } from "@/components/layout/live-clock";
+import { CameraScene } from "@/components/dashboard/camera-scene";
+import { useNoc } from "@/components/providers/noc-provider";
+import { cameraDetection, openAlertsFor, relTime, sevLabel, sevText, worstSeverity } from "@/lib/status";
+import type { AlertItem, Camera } from "@/lib/types";
 
-function BoundingBox({ camera }: { camera: Camera }) {
-  if (!camera.box || !camera.detection) return null;
-  const color =
-    camera.severity === "critical"
-      ? "border-critical text-critical"
-      : camera.severity === "warning"
-      ? "border-warning text-warning"
-      : "border-primary text-primary";
+const chip = "rounded-sm bg-black/75 px-1.5 py-0.5 font-mono text-[11px] text-white";
+const boxColor = { critical: "border-critical", warning: "border-warning", info: "border-white/80" };
+const tagColor = { critical: "bg-critical text-black", warning: "bg-warning text-black", info: "bg-white/90 text-black" };
+
+type Retry = "idle" | "trying" | "failed";
+
+function OfflineFeed({ camera }: { camera: Camera }) {
+  const [retry, setRetry] = useState<Retry>("idle");
+  const tryAgain = () => {
+    setRetry("trying");
+    setTimeout(() => setRetry("failed"), 1500);
+  };
   return (
-    <div
-      className={`absolute rounded-sm border-2 ${color}`}
-      style={{
-        left: `${camera.box.x}%`,
-        top: `${camera.box.y}%`,
-        width: `${camera.box.w}%`,
-        height: `${camera.box.h}%`,
-      }}
-    >
-      <span
-        className={`absolute -top-5 left-0 whitespace-nowrap rounded-sm px-1 text-[10px] font-semibold ${
-          camera.severity === "critical"
-            ? "bg-critical text-white"
-            : camera.severity === "warning"
-            ? "bg-warning text-black"
-            : "bg-primary text-black"
-        }`}
-      >
-        {camera.detection}
-      </span>
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#0b1114] p-3 text-center">
+      <p className="text-sm font-medium">{retry === "trying" ? "Connecting to camera..." : "No signal"}</p>
+      <p className="max-w-[28ch] text-xs text-muted-foreground" role="status">
+        {retry === "failed" ? `No response from ${camera.siteName}. Check the site uplink.` : `${camera.id} stopped sending frames.`}
+      </p>
+      <Button size="sm" variant="outline" onClick={tryAgain} disabled={retry === "trying"}>
+        {retry === "failed" ? "Retry again" : "Retry connection"}
+      </Button>
     </div>
   );
 }
 
-function CameraFeed({ camera, fullscreen = false }: { camera: Camera; fullscreen?: boolean }) {
+function Feed({ camera, detection, feedRef }: { camera: Camera; detection?: AlertItem; feedRef: React.RefObject<HTMLDivElement> }) {
+  const goFullscreen = () => feedRef.current?.requestFullscreen?.();
+  const sev = detection?.severity ?? "info";
   return (
-    <div
-      className={`relative overflow-hidden bg-black ${
-        fullscreen ? "aspect-video w-full" : "aspect-video"
-      }`}
-    >
-      {camera.status === "online" ? (
-        <>
-          <Image
-            src={camera.image}
-            alt={camera.siteName}
-            fill
-            className="object-cover opacity-80 grayscale-[20%] contrast-125"
-            unoptimized
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60" />
-          <div className="pointer-events-none absolute inset-0 animate-scan bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
-          <BoundingBox camera={camera} />
-
-          <div className="absolute left-2 top-2 flex items-center gap-1.5 rounded bg-black/60 px-1.5 py-0.5">
-            <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-critical" />
-            <span className="text-[10px] font-semibold tracking-wide text-white">REC</span>
-          </div>
-          <div className="absolute right-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-mono text-white">
-            {camera.code}
-          </div>
-          <div className="absolute bottom-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-mono text-white">
-            {camera.lastUpdated}
-          </div>
-          {camera.detection && (
-            <div className="absolute bottom-2 right-2">
-              <Badge variant={severityBadgeVariant(camera.severity === "normal" ? "info" : camera.severity)}>
-                <ScanEye className="h-3 w-3" />
-                {camera.detection}
-              </Badge>
+    <div ref={feedRef} className="feed-fs bg-black">
+      <div className="feed-frame relative aspect-video w-full overflow-hidden">
+        {camera.online ? (
+          <>
+            <CameraScene scene={camera.scene} detection={detection?.detection ?? null} box={camera.box} />
+            {detection && (
+              <div
+                className={`absolute border-2 ${boxColor[sev]}`}
+                style={{ left: `${camera.box.x}%`, top: `${camera.box.y}%`, width: `${camera.box.w}%`, height: `${camera.box.h}%` }}
+              >
+                <span className={`absolute left-0 top-0 whitespace-nowrap px-1 text-[11px] font-semibold leading-4 ${tagColor[sev]}`}>
+                  {detection.detection} {detection.confidence?.toFixed(1)}%
+                </span>
+              </div>
+            )}
+            <div className="absolute left-2 top-2 flex gap-1.5">
+              <span className={`${chip} flex items-center gap-1.5`}>
+                <span className="h-2 w-2 rounded-full bg-critical" aria-hidden="true" />
+                REC
+              </span>
+              <span className={chip}>{camera.id}</span>
             </div>
-          )}
-        </>
-      ) : (
-        <div className="flex h-full flex-col items-center justify-center gap-2 bg-[#0a0e14] text-muted-foreground">
-          <WifiOff className="h-6 w-6" />
-          <span className="text-xs font-medium">Signal Lost</span>
-          <span className="text-[10px]">{camera.code}</span>
-        </div>
-      )}
+            <LiveClock className={`${chip} absolute right-2 top-2`} />
+            <span className={`${chip} absolute bottom-2 left-2`}>Simulated feed</span>
+            <button
+              type="button"
+              onClick={goFullscreen}
+              aria-label={`Fullscreen ${camera.id}`}
+              className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-sm bg-black/75 text-white hover:bg-black"
+            >
+              <Maximize2 className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </>
+        ) : (
+          <OfflineFeed camera={camera} />
+        )}
+      </div>
     </div>
   );
 }
 
 export function CameraCard({ camera }: { camera: Camera }) {
+  const { alerts, now, setQuery } = useNoc();
   const [open, setOpen] = useState(false);
+  const cardFeed = useRef<HTMLDivElement>(null);
+  const modalFeed = useRef<HTMLDivElement>(null);
+
+  const detection = cameraDetection(alerts, camera.id);
+  const openAlerts = openAlertsFor(alerts, camera.id);
+  const worst = worstSeverity(openAlerts);
+  const status = !camera.online
+    ? { text: "Offline", cls: "text-critical" }
+    : worst && worst !== "info"
+      ? { text: sevLabel[worst], cls: sevText[worst] }
+      : { text: "Normal", cls: "text-success" };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="relative">
-        <CameraFeed camera={camera} />
-        <button
-          onClick={() => setOpen(true)}
-          className="absolute right-2 bottom-2 flex h-7 w-7 items-center justify-center rounded bg-black/60 text-white hover:bg-black/80"
-          aria-label="Fullscreen"
-        >
-          <Maximize2 className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="flex items-center justify-between px-3 py-2">
-        <div>
-          <p className="text-sm font-medium">{camera.siteName}</p>
-          <p className="text-[11px] text-muted-foreground">{camera.code}</p>
+    <article className="overflow-hidden rounded-lg border border-border bg-card">
+      <Feed camera={camera} detection={detection} feedRef={cardFeed} />
+      <div className="flex items-start justify-between gap-3 p-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-sm font-medium">{camera.siteName}</h3>
+          <p className="truncate text-xs text-muted-foreground">
+            <span className="font-mono">{camera.id}</span>, {camera.view}
+          </p>
+          <p className={`mt-1 text-xs font-medium ${status.cls}`}>
+            <span className="sr-only">Status: </span>
+            {status.text}
+            {camera.online && !detection && <span className="font-normal text-muted-foreground">, no detection</span>}
+          </p>
         </div>
-        <Badge variant={camera.status === "online" ? "success" : "critical"}>
-          <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              camera.status === "online" ? "bg-success" : "bg-critical"
-            }`}
-          />
-          {camera.status === "online" ? "Online" : "Offline"}
-        </Badge>
+        <Button size="sm" variant="outline" onClick={() => setOpen(true)} aria-label={`Details for ${camera.id}`}>
+          Details
+        </Button>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              {camera.code} — {camera.siteName}
-            </DialogTitle>
-            <DialogDescription>
-              Simulated live feed · Last updated {camera.lastUpdated}
-            </DialogDescription>
-          </DialogHeader>
-          <CameraFeed camera={camera} fullscreen />
+          <DialogTitle>
+            {camera.id}, {camera.siteName}
+          </DialogTitle>
+          <DialogDescription>{camera.view}. Simulated feed, detections are drawn from open alerts.</DialogDescription>
+          <div className="mt-4 overflow-hidden rounded-md">
+            <Feed camera={camera} detection={detection} feedRef={modalFeed} />
+          </div>
+          <div className="mt-4">
+            <h4 className="mb-2 text-sm font-medium">Open alerts on this camera</h4>
+            {openAlerts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">None. This camera has no unresolved alerts.</p>
+            ) : (
+              <ul className="divide-y divide-border rounded-md border border-border text-sm">
+                {openAlerts.map((a) => (
+                  <li key={a.id} className="flex justify-between gap-3 px-3 py-2">
+                    <span>{a.title}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      <span className={sevText[a.severity]}>{sevLabel[a.severity]}</span>, {relTime(a.at, now)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link
+              href="/alerts"
+              onClick={() => setQuery(camera.id)}
+              className="mt-3 inline-flex min-h-10 items-center text-sm font-medium text-primary underline underline-offset-4"
+            >
+              Open {camera.id} in Alerts &amp; Incidents
+            </Link>
+          </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </article>
   );
 }

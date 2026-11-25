@@ -1,7 +1,7 @@
 export type Severity = "critical" | "warning" | "info";
 export type AlertStatus = "new" | "acknowledged" | "resolved";
 export type SiteStatus = "healthy" | "warning" | "critical";
-export type CameraStatus = "online" | "offline";
+export type Scene = "rack-row" | "tower" | "battery" | "gate";
 
 export type DetectionType =
   | "Person Detection"
@@ -11,29 +11,35 @@ export type DetectionType =
   | "Smoke Detection"
   | "Fire Detection";
 
+/** Percent of the 16:9 frame. The simulated scene draws its subject from the same box. */
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface Camera {
   id: string;
-  code: string;
   siteId: string;
   siteName: string;
-  status: CameraStatus;
-  image: string;
-  detection: DetectionType | null;
-  severity: Severity | "normal";
-  box?: { x: number; y: number; w: number; h: number };
-  lastUpdated: string;
+  view: string;
+  online: boolean;
+  scene: Scene;
+  box: Box;
 }
 
 export interface AlertItem {
   id: string;
   severity: Severity;
   title: string;
-  detection: DetectionType;
+  /** null for connectivity alerts: no AI detection, so no confidence either. */
+  detection: DetectionType | null;
+  confidence: number | null;
   siteId: string;
   siteName: string;
   cameraId: string;
-  confidence: number;
-  timestamp: string;
+  at: number;
   status: AlertStatus;
 }
 
@@ -42,10 +48,12 @@ export interface Site {
   name: string;
   region: string;
   status: SiteStatus;
-  networkStatus: SiteStatus;
-  cameraStatus: SiteStatus;
-  temperature: number;
-  power: number;
+  network: SiteStatus;
+  camera: SiteStatus;
+  tempC: number;
+  powerKw: number;
   cpu: number;
-  lastUpdated: string;
+  at: number;
 }
+
+export type Seed<T> = Omit<T, "at"> & { ageMin: number };

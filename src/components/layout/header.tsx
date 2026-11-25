@@ -1,90 +1,105 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Bell, Search, Clock } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { LiveClock } from "@/components/layout/live-clock";
 import { useNoc } from "@/components/providers/noc-provider";
+import { relTime, sevRank, sevText } from "@/lib/status";
+
+const SEARCHABLE = ["/alerts", "/cameras", "/sites"];
 
 export function Header({ title }: { title: string }) {
-  const { alerts } = useNoc();
-  const [now, setNow] = useState<Date | null>(null);
+  const { alerts, sites, now, query, setQuery } = useNoc();
+  const pathname = usePathname();
+  const router = useRouter();
 
-  useEffect(() => {
-    setNow(new Date());
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
+  const open = alerts
+    .filter((a) => a.status !== "resolved")
+    .sort((a, b) => sevRank[b.severity] - sevRank[a.severity] || b.at - a.at);
 
-  const unresolved = alerts.filter((a) => a.status !== "resolved").slice(0, 5);
+  const critical = sites.some((s) => s.status === "critical");
+  const warning = sites.some((s) => s.status === "warning");
+  const state = critical
+    ? { text: "Degraded", dot: "bg-critical" }
+    : warning
+      ? { text: "Partial", dot: "bg-warning" }
+      : { text: "Operational", dot: "bg-success" };
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-card/60 px-6">
-      <div>
-        <h1 className="text-lg font-semibold">{title}</h1>
-      </div>
+    <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-background px-4 py-3 md:px-6">
+      <h1 className="min-w-0 flex-1 truncate text-lg font-semibold">{title}</h1>
 
-      <div className="flex items-center gap-3">
-        <div className="relative hidden w-64 md:block">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search sites, cameras, alerts..." className="pl-8" />
-        </div>
-
-        <div className="hidden items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground md:flex">
-          <Clock className="h-3.5 w-3.5" />
-          {now
-            ? now.toLocaleString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              })
-            : "--"}
-        </div>
-
-        <Badge variant="success" className="hidden sm:inline-flex">
-          <span className="h-1.5 w-1.5 rounded-full bg-success" />
-          Operational
-        </Badge>
+      <div className="flex items-center gap-4">
+        <LiveClock withDate className="hidden font-mono text-xs text-muted-foreground xl:block" />
+        <p className="flex items-center gap-2 text-sm">
+          <span className={`h-2 w-2 rounded-full ${state.dot}`} aria-hidden="true" />
+          <span className="sr-only">System status: </span>
+          {state.text}
+        </p>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border bg-secondary/40 hover:bg-secondary/70">
-              <Bell className="h-4 w-4" />
-              {unresolved.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-critical text-[9px] font-bold text-white">
-                  {unresolved.length}
-                </span>
-              )}
-            </button>
+          <DropdownMenuTrigger
+            aria-label={`Notifications, ${open.length} open alerts`}
+            className="relative flex h-10 w-10 items-center justify-center rounded-md border border-border hover:bg-secondary"
+          >
+            <Bell className="h-4 w-4" aria-hidden="true" />
+            {open.length > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-sm bg-critical px-1 text-center font-mono text-[11px] font-semibold leading-5 text-background">
+                {open.length}
+              </span>
+            )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {unresolved.length === 0 && (
-              <p className="px-2 py-3 text-xs text-muted-foreground">No active alerts.</p>
-            )}
-            {unresolved.map((a) => (
-              <DropdownMenuItem key={a.id} className="flex-col items-start gap-0.5">
-                <span className="font-medium text-foreground">{a.title}</span>
-                <span className="text-muted-foreground">
-                  {a.siteName} · {a.timestamp}
-                </span>
+            <DropdownMenuLabel>Open alerts, worst first</DropdownMenuLabel>
+            {open.length === 0 && <p className="px-3 py-4 text-sm text-muted-foreground">Nothing open. New detections show up here.</p>}
+            {open.slice(0, 5).map((a) => (
+              <DropdownMenuItem key={a.id} asChild>
+                <Link href="/alerts">
+                  <span className="flex justify-between gap-3">
+                    <span className="font-medium">{a.title}</span>
+                    <span className={`shrink-0 text-xs ${sevText[a.severity]}`}>{a.severity}</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {a.siteName}, {relTime(a.at, now)}
+                  </span>
+                </Link>
               </DropdownMenuItem>
             ))}
+            {open.length > 0 && (
+              <DropdownMenuItem asChild className="border-t border-border text-sm font-medium">
+                <Link href="/alerts">Open all {open.length} in Alerts &amp; Incidents</Link>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <form
+        role="search"
+        className="order-last flex w-full items-center gap-2 md:order-none md:w-80"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!SEARCHABLE.includes(pathname)) router.push("/alerts");
+        }}
+      >
+        <label htmlFor="global-search" className="shrink-0 text-xs text-muted-foreground">
+          Search
+        </label>
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input
+            id="global-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Alerts, cameras, sites"
+            className="pl-9"
+          />
+        </div>
+      </form>
     </header>
   );
 }

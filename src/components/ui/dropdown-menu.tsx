@@ -16,7 +16,7 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 min-w-[14rem] overflow-hidden rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg",
+        "z-[60] w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-lg border border-border bg-popover p-1 shadow-2xl",
         className
       )}
       {...props}
@@ -32,7 +32,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-xs outline-none focus:bg-secondary",
+      "flex min-h-11 cursor-pointer select-none flex-col justify-center gap-0.5 rounded-sm px-3 py-2 text-sm outline-none data-[highlighted]:bg-secondary",
       className
     )}
     {...props}
@@ -44,31 +44,8 @@ const DropdownMenuLabel = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label>
 >(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.Label
-    ref={ref}
-    className={cn("px-2 py-1.5 text-xs font-semibold text-muted-foreground", className)}
-    {...props}
-  />
+  <DropdownMenuPrimitive.Label ref={ref} className={cn("px-3 py-2 text-xs font-medium text-muted-foreground", className)} {...props} />
 ));
 DropdownMenuLabel.displayName = "DropdownMenuLabel";
 
-const DropdownMenuSeparator = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
->(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.Separator
-    ref={ref}
-    className={cn("-mx-1 my-1 h-px bg-border", className)}
-    {...props}
-  />
-));
-DropdownMenuSeparator.displayName = "DropdownMenuSeparator";
-
-export {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-};
+export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel };

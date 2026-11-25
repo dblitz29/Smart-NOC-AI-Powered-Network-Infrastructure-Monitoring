@@ -1,109 +1,61 @@
 "use client";
 
-import { Server, Siren, ScanEye, Camera as CameraIcon, Wifi } from "lucide-react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
-import { KpiCard } from "@/components/dashboard/kpi-card";
+import { MetricStrip } from "@/components/dashboard/metric-strip";
 import { CameraCard } from "@/components/dashboard/camera-card";
-import { AlertRow } from "@/components/dashboard/alert-row";
+import { AlertQueue } from "@/components/dashboard/alert-queue";
 import { LiveSimToggle } from "@/components/dashboard/live-sim-toggle";
 import { useNoc } from "@/components/providers/noc-provider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
+import { openAlertsFor, sevRank, worstSeverity } from "@/lib/status";
 
 export default function OverviewPage() {
   const { cameras, alerts } = useNoc();
-  const recentAlerts = alerts.slice(0, 5);
+
+  // The wall leads with the camera that has the worst open alert; offline counts as a warning.
+  const rank = (id: string, online: boolean) => {
+    const w = worstSeverity(openAlertsFor(alerts, id));
+    return Math.max(w ? sevRank[w] : 0, online ? 0 : 2);
+  };
+  const wall = cameras
+    .slice(0, 4)
+    .map((c, i) => ({ c, i, r: rank(c.id, c.online) }))
+    .sort((a, b) => b.r - a.r || a.i - b.i)
+    .map((x) => x.c);
+  const [lead, ...rest] = wall;
 
   return (
     <AppShell title="Overview">
-      <div className="mb-5 flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Real-time summary across all monitored telecom sites.
-        </p>
-        <LiveSimToggle />
-      </div>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="max-w-xl text-sm text-muted-foreground">
+            Sample figures for the sites on this console. With simulated events on, a new mock detection arrives every 20 seconds.
+          </p>
+          <LiveSimToggle />
+        </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <KpiCard
-          label="Sites Online"
-          value="24 / 26"
-          delta="+2"
-          trend="up"
-          trendGood
-          comparison="vs last week"
-          icon={Server}
-          accent="success"
-        />
-        <KpiCard
-          label="Active Alerts"
-          value={String(alerts.filter((a) => a.status !== "resolved").length)}
-          delta="+3"
-          trend="up"
-          trendGood={false}
-          comparison="vs yesterday"
-          icon={Siren}
-          accent="critical"
-        />
-        <KpiCard
-          label="AI Detections Today"
-          value="1,284"
-          delta="+12.4%"
-          trend="up"
-          trendGood
-          comparison="vs yesterday"
-          icon={ScanEye}
-          accent="primary"
-        />
-        <KpiCard
-          label="Camera Availability"
-          value="98.4%"
-          delta="-0.3%"
-          trend="down"
-          trendGood={false}
-          comparison="vs last 24h"
-          icon={CameraIcon}
-          accent="warning"
-        />
-        <KpiCard
-          label="Network Availability"
-          value="99.2%"
-          delta="+0.1%"
-          trend="up"
-          trendGood
-          comparison="vs last 24h"
-          icon={Wifi}
-          accent="success"
-        />
-      </div>
+        <MetricStrip />
 
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Live Camera Feeds</CardTitle>
-            <Link href="/cameras" className="text-xs font-medium text-primary hover:underline">
-              View all
-            </Link>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {cameras.slice(0, 4).map((cam) => (
-              <CameraCard key={cam.id} camera={cam} />
-            ))}
-          </CardContent>
-        </Card>
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
+          <section aria-labelledby="wall-h" className="space-y-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 id="wall-h" className="text-sm font-semibold">
+                Camera wall
+              </h2>
+              <Link href="/cameras" className="text-sm font-medium text-primary underline underline-offset-4">
+                All {cameras.length} cameras
+              </Link>
+            </div>
+            <CameraCard camera={lead} />
+            <div className="grid gap-3 sm:grid-cols-3">
+              {rest.map((c) => (
+                <CameraCard key={c.id} camera={c} />
+              ))}
+            </div>
+          </section>
 
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Recent Alerts</CardTitle>
-            <Link href="/alerts" className="text-xs font-medium text-primary hover:underline">
-              View all
-            </Link>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {recentAlerts.map((a) => (
-              <AlertRow key={a.id} alert={a} compact />
-            ))}
-          </CardContent>
-        </Card>
+          <AlertQueue />
+        </div>
       </div>
     </AppShell>
   );

@@ -1,88 +1,81 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { CameraCard } from "@/components/dashboard/camera-card";
+import { EmptyState } from "@/components/dashboard/empty-state";
+import { FilterSelect } from "@/components/dashboard/filter-select";
 import { LiveSimToggle } from "@/components/dashboard/live-sim-toggle";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useNoc } from "@/components/providers/noc-provider";
+import { openAlertsFor } from "@/lib/status";
 
 export default function CamerasPage() {
-  const { cameras } = useNoc();
-  const [query, setQuery] = useState("");
+  const { cameras, sites, alerts, query, setQuery } = useNoc();
   const [site, setSite] = useState("all");
   const [status, setStatus] = useState("all");
 
-  const sites = useMemo(
-    () => Array.from(new Set(cameras.map((c) => c.siteName))),
-    [cameras]
-  );
-
-  const filtered = cameras.filter((c) => {
-    const matchesQuery =
-      c.code.toLowerCase().includes(query.toLowerCase()) ||
-      c.siteName.toLowerCase().includes(query.toLowerCase());
-    const matchesSite = site === "all" || c.siteName === site;
-    const matchesStatus = status === "all" || c.status === status;
-    return matchesQuery && matchesSite && matchesStatus;
+  const q = query.trim().toLowerCase();
+  const rows = cameras.filter((c) => {
+    const hit = !q || `${c.id} ${c.siteName} ${c.view}`.toLowerCase().includes(q);
+    const bySite = site === "all" || c.siteId === site;
+    const byStatus =
+      status === "all" ||
+      (status === "online" && c.online) ||
+      (status === "offline" && !c.online) ||
+      (status === "alerting" && openAlertsFor(alerts, c.id).length > 0);
+    return hit && bySite && byStatus;
   });
+  const reset = () => {
+    setQuery("");
+    setSite("all");
+    setStatus("all");
+  };
 
   return (
     <AppShell title="Camera Monitoring">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative w-56">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search camera or site..."
-              className="h-8 pl-8 text-xs"
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <FilterSelect
+              id="cam-site"
+              label="Site"
+              value={site}
+              onChange={setSite}
+              options={[{ value: "all", label: "All sites" }, ...sites.map((s) => ({ value: s.id, label: s.name }))]}
             />
+            <FilterSelect
+              id="cam-status"
+              label="Status"
+              value={status}
+              onChange={setStatus}
+              options={[
+                { value: "all", label: "All cameras" },
+                { value: "online", label: "Online" },
+                { value: "offline", label: "Offline" },
+                { value: "alerting", label: "With open alerts" },
+              ]}
+            />
+            <p className="pb-2.5 text-sm text-muted-foreground" role="status">
+              {rows.length} of {cameras.length} cameras
+            </p>
           </div>
-          <Select value={site} onValueChange={setSite}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Site" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All sites</SelectItem>
-              {sites.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All status</SelectItem>
-              <SelectItem value="online">Online</SelectItem>
-              <SelectItem value="offline">Offline</SelectItem>
-            </SelectContent>
-          </Select>
+          <LiveSimToggle />
         </div>
-        <LiveSimToggle />
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((cam) => (
-          <CameraCard key={cam.id} camera={cam} />
-        ))}
-        {filtered.length === 0 && (
-          <p className="col-span-full py-10 text-center text-sm text-muted-foreground">
-            No cameras match your filters.
-          </p>
+        <h2 className="sr-only">Camera feeds</h2>
+        {rows.length === 0 ? (
+          <EmptyState
+            title="No cameras match"
+            hint="Nothing fits the current search and filters. Clear them to see every camera again."
+            action={<Button variant="outline" onClick={reset}>Clear search and filters</Button>}
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {rows.map((c) => (
+              <CameraCard key={c.id} camera={c} />
+            ))}
+          </div>
         )}
       </div>
     </AppShell>

@@ -1,83 +1,58 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import type { AlertItem } from "@/lib/types";
-import { severityBadgeVariant } from "@/lib/status";
+import Link from "next/link";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, SIDE_PANEL } from "@/components/ui/dialog";
+import { AlertActions } from "@/components/dashboard/alert-actions";
 import { useNoc } from "@/components/providers/noc-provider";
+import { fmtWib, relTime, sevLabel, sevText, statusLabel } from "@/lib/status";
 
-export function AlertDetailDialog({
-  alert,
-  open,
-  onOpenChange,
-}: {
-  alert: AlertItem | null;
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-}) {
-  const { acknowledgeAlert, resolveAlert } = useNoc();
-  if (!alert) return null;
+/** Side panel. Reads the live alert by id so Acknowledge and Resolve update it in place. */
+export function AlertDetailDialog({ alertId, onClose }: { alertId: string | null; onClose: () => void }) {
+  const { alerts, now, setQuery } = useNoc();
+  const alert = alerts.find((a) => a.id === alertId);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{alert.title}</DialogTitle>
-          <DialogDescription>{alert.id}</DialogDescription>
-        </DialogHeader>
+    <Dialog open={!!alert} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className={SIDE_PANEL}>
+        {alert && (
+          <>
+            <DialogTitle>{alert.title}</DialogTitle>
+            <DialogDescription>
+              <span className="font-mono">{alert.id}</span>, {alert.siteName}
+            </DialogDescription>
 
-        <div className="space-y-3 text-sm">
-          <div className="flex items-center gap-2">
-            <Badge variant={severityBadgeVariant(alert.severity)}>{alert.severity}</Badge>
-            <Badge variant="outline">{alert.status}</Badge>
-          </div>
+            <dl className="mt-5 grid grid-cols-[8.5rem_1fr] gap-y-3 text-sm">
+              <dt className="text-muted-foreground">Severity</dt>
+              <dd className={`font-medium ${sevText[alert.severity]}`}>{sevLabel[alert.severity]}</dd>
+              <dt className="text-muted-foreground">Status</dt>
+              <dd>{statusLabel[alert.status]}</dd>
+              <dt className="text-muted-foreground">Detection</dt>
+              <dd>{alert.detection ?? "None, connectivity event"}</dd>
+              <dt className="text-muted-foreground">AI confidence</dt>
+              <dd className="font-mono">{alert.confidence === null ? "Not applicable" : `${alert.confidence.toFixed(1)}%`}</dd>
+              <dt className="text-muted-foreground">Site</dt>
+              <dd>{alert.siteName}</dd>
+              <dt className="text-muted-foreground">Camera</dt>
+              <dd className="font-mono">{alert.cameraId}</dd>
+              <dt className="text-muted-foreground">Detected</dt>
+              <dd>
+                {relTime(alert.at, now)}
+                <span className="block font-mono text-xs text-muted-foreground">{fmtWib(new Date(alert.at), true)} WIB</span>
+              </dd>
+            </dl>
 
-          <Separator />
-
-          <dl className="grid grid-cols-2 gap-y-2 text-xs">
-            <dt className="text-muted-foreground">Site</dt>
-            <dd className="text-right font-medium">{alert.siteName}</dd>
-            <dt className="text-muted-foreground">Camera</dt>
-            <dd className="text-right font-medium">{alert.cameraId}</dd>
-            <dt className="text-muted-foreground">Detection type</dt>
-            <dd className="text-right font-medium">{alert.detection}</dd>
-            <dt className="text-muted-foreground">AI Confidence</dt>
-            <dd className="text-right font-medium">{alert.confidence}%</dd>
-            <dt className="text-muted-foreground">Timestamp</dt>
-            <dd className="text-right font-medium">{alert.timestamp}</dd>
-          </dl>
-
-          <Separator />
-
-          <div className="flex justify-end gap-2 pt-1">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={alert.status !== "new"}
-              onClick={() => acknowledgeAlert(alert.id)}
-            >
-              Acknowledge
-            </Button>
-            <Button
-              size="sm"
-              disabled={alert.status === "resolved"}
-              onClick={() => {
-                resolveAlert(alert.id);
-                onOpenChange(false);
-              }}
-            >
-              Resolve
-            </Button>
-          </div>
-        </div>
+            <div className="mt-6 border-t border-border pt-4">
+              <AlertActions alert={alert} />
+              <Link
+                href="/cameras"
+                onClick={() => setQuery(alert.cameraId)}
+                className="mt-4 inline-flex min-h-10 items-center text-sm font-medium text-primary underline underline-offset-4"
+              >
+                See {alert.cameraId} in Camera Monitoring
+              </Link>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
