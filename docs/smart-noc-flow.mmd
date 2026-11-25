@@ -1,0 +1,20 @@
+flowchart TD
+    start(("User opens Smart NOC")) --> shell["App Shell loads\n(Sidebar + Header + NocProvider state)"]
+    shell --> overview["Overview Dashboard (default)\nKPI cards, camera grid, recent alerts"]
+    shell --> simToggle{"Live simulation toggle"}
+    overview --> navDecision{"User selects nav item"}
+
+    navDecision -->|Cameras| cameras["Camera Monitoring page\ngrid, search, filters"]
+    navDecision -->|Alerts| alerts["Alerts & Incidents page\ntable + filters"]
+    navDecision -->|Site Health| sites["Site Health page\ntelemetry cards/table"]
+    navDecision -->|Analytics| analytics["Analytics page\nRecharts trends & distributions"]
+
+    cameras --> cameraSelect{"Select camera card"}
+    cameraSelect --> fullscreen["Fullscreen camera modal\nlive status, bounding boxes"]
+
+    alerts --> alertDetail["Open alert detail panel"]
+    alertDetail --> ackResolve["Acknowledge / Resolve\n(updates NocProvider state)"]
+    ackResolve -.state updates.-> alerts
+
+    simToggle -->|ON| simTimer["Timer generates mock AI detection\nevery ~14s"]
+    simTimer -.pushes new alert.-> alerts

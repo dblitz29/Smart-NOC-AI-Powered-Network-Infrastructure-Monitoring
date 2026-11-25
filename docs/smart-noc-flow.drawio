@@ -1,0 +1,103 @@
+<mxfile host="Electron" agent="Kiro">
+  <diagram name="Smart NOC - User Flow" id="smart-noc-flow">
+    <mxGraphModel dx="1585" dy="963" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="e15" edge="1" parent="1" source="simTimer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#22d3ee;dashed=1;" target="alerts" value="pushes new alert">
+          <mxGeometry relative="1" x="0.3782" y="-5" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1f2937;fontColor=#ffffff;strokeColor=#22d3ee;" value="User opens Smart NOC" vertex="1">
+          <mxGeometry height="60" width="200" x="680" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="shell" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;fontColor=#ffffff;strokeColor=#374151;" value="App Shell loads&#xa;(Sidebar + Header + NocProvider state)" vertex="1">
+          <mxGeometry height="60" width="260" x="650" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="overview" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0e7490;fontColor=#ffffff;strokeColor=#22d3ee;" value="Overview Dashboard&#xa;(default route)&#xa;KPI cards, camera grid, recent alerts" vertex="1">
+          <mxGeometry height="70" width="260" x="650" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="cameras" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;fontColor=#ffffff;strokeColor=#22d3ee;" value="Camera Monitoring page&#xa;grid, search, site/status filters" vertex="1">
+          <mxGeometry height="70" width="240" x="140" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="navDecision" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#1f2937;fontColor=#ffffff;strokeColor=#374151;" value="User selects nav item" vertex="1">
+          <mxGeometry height="80" width="180" x="690" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="cameraSelect" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#1f2937;fontColor=#ffffff;strokeColor=#374151;" value="Select camera card" vertex="1">
+          <mxGeometry height="70" width="180" x="170" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="fullscreen" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;fontColor=#ffffff;strokeColor=#22d3ee;" value="Fullscreen camera modal&#xa;(live status, bounding boxes)" vertex="1">
+          <mxGeometry height="70" width="240" x="140" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="alerts" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;fontColor=#ffffff;strokeColor=#f59e0b;" value="Alerts &amp; Incidents page&#xa;table, filters (severity/status/site/time)" vertex="1">
+          <mxGeometry height="70" width="240" x="440" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="alertDetail" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;fontColor=#ffffff;strokeColor=#f59e0b;" value="Open alert detail panel" vertex="1">
+          <mxGeometry height="60" width="240" x="440" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="ackResolve" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;fontColor=#ffffff;strokeColor=#f59e0b;" value="Acknowledge / Resolve&#xa;(updates NocProvider alert state)" vertex="1">
+          <mxGeometry height="70" width="240" x="440" y="750" as="geometry" />
+        </mxCell>
+        <mxCell id="sites" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;fontColor=#ffffff;strokeColor=#22c55e;" value="Site Health page&#xa;telemetry cards/table per site" vertex="1">
+          <mxGeometry height="70" width="240" x="740" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="analytics" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;fontColor=#ffffff;strokeColor=#a78bfa;" value="Analytics page&#xa;Recharts: trends &amp; distributions" vertex="1">
+          <mxGeometry height="70" width="240" x="1040" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="simToggle" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#1f2937;fontColor=#ffffff;strokeColor=#374151;" value="Live simulation toggle (header/cameras)" vertex="1">
+          <mxGeometry height="80" width="240" x="1040" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="simTimer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;fontColor=#ffffff;strokeColor=#22d3ee;dashed=1;" value="Timer generates mock AI detection&#xa;every ~14s -&gt; new alert pushed to state" vertex="1">
+          <mxGeometry height="70" width="260" x="1040" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="start" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#9ca3af;" target="shell">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="shell" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#9ca3af;" target="overview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="overview" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#9ca3af;" target="navDecision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="navDecision" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#22d3ee;" target="cameras" value="Cameras">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="navDecision" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#f59e0b;" target="alerts" value="Alerts">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="navDecision" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#22c55e;" target="sites" value="Site Health">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="navDecision" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#a78bfa;" target="analytics" value="Analytics">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1160" y="440" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="cameras" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#9ca3af;" target="cameraSelect">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="cameraSelect" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#9ca3af;" target="fullscreen" value="click fullscreen">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="alerts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#9ca3af;" target="alertDetail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="alertDetail" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#9ca3af;" target="ackResolve">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="ackResolve" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#f59e0b;dashed=1;" target="alerts" value="state updates">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="shell" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#9ca3af;" target="simToggle">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="simToggle" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#22d3ee;" target="simTimer" value="ON">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
